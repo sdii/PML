@@ -1,0 +1,72 @@
+Title
+========================================================
+Data has been taken from the source http://groupware.les.inf.puc-rio.br/har which has been mentioned on coursera.This data contains information about a group of 6 enthusiasts who take measurements about themselves regularly to improve their health in form of quantification of activities they do, although they rarely quantify how well they do it.They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+Goal of this project is to use data from accelerometers on the belt, forearm, arm and dumbell of 6 participants and predict the manner in which they did the exercise.Variable "classe" is used in the data to predict the model.
+Training data given on the coursera was used to create the model.
+Expected out of sample error is that some of the classes can be ignored from the model, even though they are important, due to overfitting which can be remoed by use of K-Fold and cross validation.
+```{r}
+url<-"http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv";
+data<-read.csv(url);
+
+```
+Data is spilitted into training and testing sets.
+`r{rrr}
+inTrrain<-createDataPartition(y=data$classe,p=0.6,list=FALSE);
+training<-daat[inTrain,];
+testing<-data[-inTrain,];
+```
+Common Variates are added and dummies created
+```{r}
+tables(training$user_name);
+dummies<-dummyVars(classe~user_name,data=training);
+head(predict(dummies,newdata=training));
+```
+Variables having nearly zero variations are removed so that only high variations variables are present in model to increase degree of explanation of model.
+```{r}
+nsv<-nearZeroVar(training,saveMetrics=TRUE);
+nsv;
+new<-nsv[grep("FALSE",nsv$nzv,ignore.case=T),];
+```
+New data set id created having only FALSE variables.
+```{r}
+goodvar<-row.names(new);
+newdata<-data[c(goodvar)];
+```
+To ensure generation of similar type of data set partition every timeset.seed id used.
+```{r}
+set.seed(10000);
+```
+New data set id partitioned to create model.
+```{r}
+inTrain<-createDataPartition(y=newdata$classe,p=0.6,list=FALSE);
+training<-newdata[inTrain,];
+testing<-newdata[-inTrain,];
+training$classe=factor(training$classe);
+```
+Preprocessing on new data set.
+```{r}
+newdata<-newdata[,6:109];
+newdata2<-newdata;
+newdata2[is.na(newdata)]<-0;
+preProc<-preProcess(newdata2[,-104],method="pca");
+dataPC<-predict(preProc,newdata2[,-104]);
+```
+Preprocessing the training data set.PCA is applies to the training dataset to consider only few variables which have quite significant variations.
+```{r}
+training2<-training;
+training2[is.na(training)]<-0;
+colnames(training2);
+training1<-training2[,6:109];
+preProc1<-preProcess(training1[,-104],method="pca");
+dataPC1<-predict(preProc,training1[,-104]);
+```
+Finaaly fitting the model in the training dataset.
+```{r}
+modelFit<-train(training1$classe~.,method="rf",data=dataPC1);
+```
+
+
+
+
+
